@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // 1. Ավելացրինք useState-ը
+import React, { useState } from "react"; 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/header/Header";
 import Aside from "./components/Aside/Aside";
@@ -10,24 +10,22 @@ import Services from "./Pages/Services/Services";
 import Info from "./Pages/Info/Info";
 import HouseDetails from "./Pages/HouseDetails/HouseDetails";
 
-// 2. Ավելացնում ենք Չաթն ու իր իկոնները
+// Չաթն ու իր իկոնները
 import Chat from "./components/Chat"; 
-import { IoCloseOutline } from "react-icons/io5"; 
+import { IoCloseOutline } from "react-[#007bff]"; // իկոնների import-ը
 import { AiOutlineMessage } from "react-icons/ai"; 
 
-// 3. Ավելացնում ենք Քարտեզի Modal-ը
-import MapModal from "./components/MapModal"; // 👈 Ստուգիր MapModal.jsx-ի ճիշտ path-ը
+// Քարտեզի Modal-ը
+import MapModal from "./components/MapModal"; 
 
 function App() {
-  // 4. State-եր Չաթի և Քարտեզի համար
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isMapOpen, setIsMapOpen] = useState(false); // 👈 Քարտեզի բաց/փակ վիճակը
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   return (
     <BrowserRouter>
-      {/* 5. "relative" դասը, որ լողացող կոճակները ճիշտ դիրքավորվեն */}
       <div className="w-full min-h-screen text-[#1a1a1a] relative">
-        {/* Header-ին փոխանցում ենք onMapOpen-ը, որ կոճակին սեղմելիս բացվի Modal-ը */}
+        {/* Header-ին փոխանցում ենք onMapOpen prop-ը */}
         <Header onMapOpen={() => setIsMapOpen(true)} />
 
         <Routes>
@@ -39,7 +37,8 @@ function App() {
                   <Aside />
                 </div>
                 <div className="flex-1 w-full overflow-hidden">
-                  <Main />
+                  {/* 👈 Main-ին նույնպես փոխանցում ենք onMapOpen prop-ը */}
+                  <Main onMapOpen={() => setIsMapOpen(true)} />
                 </div>
               </div>
             }
@@ -51,18 +50,16 @@ function App() {
           <Route path="/house/:id" element={<HouseDetails />} />
         </Routes>
 
-        {/* 6. ՔԱՐՏԵԶԻ MODAL-Ը */}
+        {/* ՔԱՐՏԵԶԻ MODAL-Ը */}
         <MapModal 
           isOpen={isMapOpen} 
           onClose={() => setIsMapOpen(false)} 
         />
 
-        {/* 7. ՉԱԹԻ ԼՈՂԱՑՈՂ ԿՈՃԱԿԸ ԵՎ ՊԱՏՈՒՀԱՆԸ */}
+        {/* ՉԱԹԻ ԼՈՂԱՑՈՂ ԿՈՃԱԿԸ ԵՎ ՊԱՏՈՒՀԱՆԸ */}
         <div className="fixed bottom-[25px] right-[25px] z-[9999] flex flex-col items-end gap-[10px]">
-          {/* Պատուհանը */}
           <Chat isOpen={isChatOpen} />
 
-          {/* Կոճակը */}
           <button 
             onClick={() => setIsChatOpen(!isChatOpen)}
             className={`w-[55px] h-[55px] rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${
