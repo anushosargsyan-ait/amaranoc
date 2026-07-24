@@ -25,21 +25,24 @@ function App() {
   return (
     <BrowserRouter>
       <div className="w-full min-h-screen text-[#1a1a1a] relative">
-        {/* Header-ն արդեն առանց onMapOpen-ի է */}
         <Header />
 
         <Routes>
           <Route
             path="/"
             element={
-              <div className="max-w-[1320px] mx-auto px-[15px] xl:px-[20px] flex items-start gap-[30px] mt-[30px] mb-[50px]">
-                <div className="flex-shrink-0 w-[280px]">
+              <div className="max-w-[1320px] mx-auto px-[15px] xl:px-[20px] flex items-start gap-[30px] mt-[15px] lg:mt-[30px] mb-[50px]">
+                
+                {/* 👈 Mobile-ում hidden է, Desktop-ում (lg:block) ցույց է տալիս Aside-ը */}
+                <div className="hidden lg:block flex-shrink-0 w-[280px]">
                   <Aside />
                 </div>
+
+                {/* 👈 Mobile-ում Main-ը զբաղեցնում է 100% լայնություն */}
                 <div className="flex-1 w-full overflow-hidden">
-                  {/* Main-ին փոխանցում ենք onMapOpen-ը, որ էջի «Քարտեզ» կոճակն աշխատի */}
                   <Main onMapOpen={() => setIsMapOpen(true)} />
                 </div>
+
               </div>
             }
           />
