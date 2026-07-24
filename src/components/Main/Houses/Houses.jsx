@@ -17,24 +17,27 @@ const House = () => {
         const isFav = favorites.includes(index);
 
         const name = (qartName[index] || "").trim();
-        
+
         // 1. Մաքրում ենք պրոբելները մարդկանց քանակից
         const peopleRaw = (qardPeople[index] || "").toString().trim();
         const people = Number(peopleRaw);
 
-        // 2. Մաքրում ենք ԿԵՏԵՐԸ ու պրոբելները գնի միջից ("40.000" -> 40000)
+        // 2. Մաքրում ենք ԿԵՏԵՐԸ գնի միջից ("40.000" -> 40000)
         const priceRaw = (qardPrice[index] || "").toString().replace(/\./g, "").trim();
         const price = Number(priceRaw);
 
         // --- 1. ՏԱՐԱԾԱՇՐՋԱՆԻ ՖԻԼՏՐ ---
         if (selectedRegions.length > 0) {
-          const matchesRegion = selectedRegions.some((reg) =>
-            name.toLowerCase().includes(reg.toLowerCase().trim())
-          );
+          const matchesRegion = selectedRegions.some((reg) => {
+            // Հեռացնում ենք փակագծերն ու դրանց մեջի թվերը (օր. "Ծաղկաձոր (114)" -> "Ծաղկաձոր")
+            const cleanRegionName = reg.replace(/\s*\([\d\s]+\)/g, "").replace(/[0-9]/g, "").trim().toLowerCase();
+            return name.toLowerCase().includes(cleanRegionName);
+          });
+
           if (!matchesRegion) return null;
         }
 
-        // --- 2. ՄԱՐԴԿԱՆՑ ՔԱՆԱԿԻ ՖԻԼՏՐ ---
+        // --- 2. ՄԱՐԴԿԱՆՑ ՔԱՆԱՔԻ ՖԻԼՏՐ ---
         if (guestsCount > 1 && people < guestsCount) {
           return null;
         }
@@ -53,6 +56,7 @@ const House = () => {
             key={index}
             className="w-[calc((100%-40px)/3)] flex flex-col rounded-[12px] overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.08)] bg-white transition-transform duration-200 hover:scale-[1.02] relative"
           >
+            {/* Սրտիկի Կոճակ */}
             <button
               type="button"
               onClick={(e) => {
