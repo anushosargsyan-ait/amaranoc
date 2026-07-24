@@ -12,7 +12,7 @@ import HouseDetails from "./Pages/HouseDetails/HouseDetails";
 
 // Չաթն ու իր իկոնները
 import Chat from "./components/Chat"; 
-import { IoCloseOutline } from "react-[#007bff]"; // իկոնների import-ը
+import { IoCloseOutline } from "react-icons/io5"; 
 import { AiOutlineMessage } from "react-icons/ai"; 
 
 // Քարտեզի Modal-ը
