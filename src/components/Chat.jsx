@@ -628,4 +628,4 @@ export default function Chat({ isOpen }) {
       )}
     </div>
   );
-}
+}  
