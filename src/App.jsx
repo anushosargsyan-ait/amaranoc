@@ -15,15 +15,20 @@ import Chat from "./components/Chat";
 import { IoCloseOutline } from "react-icons/io5"; 
 import { AiOutlineMessage } from "react-icons/ai"; 
 
+// 3. Ավելացնում ենք Քարտեզի Modal-ը
+import MapModal from "./components/MapModal"; // 👈 Ստուգիր MapModal.jsx-ի ճիշտ path-ը
+
 function App() {
-  // 3. Չաթի բաց/փակ վիճակը
+  // 4. State-եր Չաթի և Քարտեզի համար
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false); // 👈 Քարտեզի բաց/փակ վիճակը
 
   return (
     <BrowserRouter>
-      {/* 4. Ավելացրինք "relative" դասը, որ լողացող կոճակը ճիշտ դիրքավորվի */}
+      {/* 5. "relative" դասը, որ լողացող կոճակները ճիշտ դիրքավորվեն */}
       <div className="w-full min-h-screen text-[#1a1a1a] relative">
-        <Header />
+        {/* Header-ին փոխանցում ենք onMapOpen-ը, որ կոճակին սեղմելիս բացվի Modal-ը */}
+        <Header onMapOpen={() => setIsMapOpen(true)} />
 
         <Routes>
           <Route
@@ -46,7 +51,13 @@ function App() {
           <Route path="/house/:id" element={<HouseDetails />} />
         </Routes>
 
-        {/* 5. ՉԱԹԻ ԼՈՂԱՑՈՂ ԿՈՃԱԿԸ ԵՎ ՊԱՏՈՒՀԱՆԸ */}
+        {/* 6. ՔԱՐՏԵԶԻ MODAL-Ը */}
+        <MapModal 
+          isOpen={isMapOpen} 
+          onClose={() => setIsMapOpen(false)} 
+        />
+
+        {/* 7. ՉԱԹԻ ԼՈՂԱՑՈՂ ԿՈՃԱԿԸ ԵՎ ՊԱՏՈՒՀԱՆԸ */}
         <div className="fixed bottom-[25px] right-[25px] z-[9999] flex flex-col items-end gap-[10px]">
           {/* Պատուհանը */}
           <Chat isOpen={isChatOpen} />

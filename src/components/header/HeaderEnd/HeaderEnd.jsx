@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHeart, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faHeart, faTimes, faMapMarkedAlt } from "@fortawesome/free-solid-svg-icons";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 // Ներմուծում ենք տվյալները (համոզվիր, որ ճանապարհը ճիշտ է)
 import { qardImg, qartName, qardPrice } from "../../Main/Code"; 
 
-const HeaderEnd = () => {
+// 1. Ընդունում ենք onMapOpen prop-ը Header.jsx-ից
+const HeaderEnd = ({ onMapOpen }) => {
   // Վերցնում ենք և՛ ցանկը, և՛ հեռացնելու ֆունկցիան
   const { favorites, toggleFavorite } = useFavoriteStore();
   
@@ -15,6 +16,15 @@ const HeaderEnd = () => {
   return (
     <div className="flex items-center gap-4 relative">
       
+      {/* 2. ՔԱՐՏԵԶԻ ԿՈՃԱԿԸ */}
+      <button 
+        onClick={onMapOpen}
+        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-100 transition-all text-[14px] font-semibold text-gray-700 cursor-pointer shadow-sm"
+      >
+        <FontAwesomeIcon icon={faMapMarkedAlt} className="text-orange-500 text-[16px]" />
+        <span>Քարտեզ</span>
+      </button>
+
       {/* Սրտիկի Կոճակ */}
       <div 
         className="relative cursor-pointer p-2 hover:bg-gray-100 rounded-full transition-colors"
