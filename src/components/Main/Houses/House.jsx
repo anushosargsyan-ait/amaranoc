@@ -4,15 +4,47 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot, faHeart as fasHeart } from "@fortawesome/free-solid-svg-icons";
 import { qardImg, qartName, qardPeople, qardPrice } from "../Code";
-import { useFavoriteStore } from "../../store/useFavoriteStore"; // Ուղղիր ֆայլի դիրքը ըստ քո կառուցվածքի
+import { useFavoriteStore } from "../../store/useFavoriteStore";
+import { useFilterStore } from "../../store/useFilterStore"; // 1. Import ենք անում Filter Store-ը
 
 const House = () => {
   const { favorites, toggleFavorite } = useFavoriteStore();
+  
+  // 2. Վերցնում ենք ֆիլտրերի state-երը
+  const { selectedRegions, priceRange, guestsCount } = useFilterStore();
 
   return (
     <div className="flex flex-wrap gap-5 w-full mt-6">
       {qardImg.map((imgUrl, index) => {
         const isFav = favorites.includes(index);
+
+        // Տվյալ քարտի տվյալները
+        const name = qartName[index];
+        const people = Number(qardPeople[index]);
+        const price = Number(qardPrice[index]);
+
+        // --- ՖԻԼՏՐՄԱՆ ԼՈԳԻԿԱ ---
+        // 1. Տարածաշրջանի ստուգում (եթե ընտրված է տարածաշրջան ու այս քարտի անունը չի պարունակում դա)
+        if (
+          selectedRegions.length > 0 &&
+          !selectedRegions.some((reg) => name?.toLowerCase().includes(reg.toLowerCase()))
+        ) {
+          return null;
+        }
+
+        // 2. Մարդկանց քանակի ստուգում
+        if (people && people < guestsCount) {
+          return null;
+        }
+
+        // 3. Գնի ստուգում (min / max)
+        if (priceRange.min !== "" && price < Number(priceRange.min)) {
+          return null;
+        }
+        if (priceRange.max !== "" && price > Number(priceRange.max)) {
+          return null;
+        }
+        // -------------------------
 
         return (
           <Link
@@ -27,7 +59,7 @@ const House = () => {
                 e.preventDefault(); // Կանխում է էջի անցումը Link-ով
                 toggleFavorite(index);
               }}
-              className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors"
+              className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors cursor-pointer"
             >
               <FontAwesomeIcon
                 icon={isFav ? fasHeart : farHeart}
@@ -39,7 +71,7 @@ const House = () => {
 
             <img
               src={imgUrl}
-              alt={qartName[index]}
+              alt={name}
               className="w-full h-[240px] object-cover"
             />
 
@@ -50,7 +82,7 @@ const House = () => {
                     icon={faLocationDot}
                     style={{ color: "orange", marginRight: "8px" }}
                   />
-                  {qartName[index]}
+                  {name}
                 </h3>
 
                 <p className="text-[15px] font-sans text-[#666] m-0">
@@ -58,7 +90,7 @@ const House = () => {
                     icon={faAccessibleIcon}
                     style={{ color: "orange", marginLeft: "10px" }}
                   />
-                  {qardPeople[index]} անձ
+                  {people} անձ
                 </p>
               </div>
 
@@ -67,7 +99,7 @@ const House = () => {
                   icon={faAddressCard}
                   style={{ color: "orange", marginRight: "10px" }}
                 />
-                {qardPrice[index]} ֏
+                {price} ֏
               </p>
             </div>
           </Link>
@@ -78,5 +110,3 @@ const House = () => {
 };
 
 export default House;
-
-// Մնացած export-ները (iconsImg, iconsText, և այլն) թողնում ես նույնությամբ...

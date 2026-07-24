@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useFilterStore } from "../../store/useFilterStore"; // Ստուգիր path-ը
 
 const People = () => {
-  const [num, setNum] = useState(1);
+  // Zustand store-ից վերցնում ենք guestsCount-ն ու setGuestsCount-ը
+  const { guestsCount, setGuestsCount } = useFilterStore();
 
   return (
     <div className="w-full pt-5 border-t border-[#f0f0f0]">
@@ -10,20 +11,20 @@ const People = () => {
       </h4>
       <div className="flex items-center gap-4">
         <button
-          onClick={() => setNum((prev) => (prev > 1 ? prev - 1 : 1))}
-          className="h-11 w-11 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#111] flex items-center justify-center text-xl cursor-pointer transition-colors border-none"
+          onClick={() => setGuestsCount(guestsCount > 1 ? guestsCount - 1 : 1)}
+          className="h-11 w-11 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#111] flex items-center justify-center text-xl cursor-pointer transition-colors border-none select-none"
         >
           −
         </button>
         <input
-          value={num}
+          value={guestsCount}
           className="text-center rounded-[12px] h-11 w-[70px] border border-[#ddd] text-[16px] font-medium outline-none"
           type="text"
           readOnly
         />
         <button
-          onClick={() => setNum((prev) => prev + 1)}
-          className="h-11 w-11 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#111] flex items-center justify-center text-xl cursor-pointer transition-colors border-none"
+          onClick={() => setGuestsCount(guestsCount + 1)}
+          className="h-11 w-11 rounded-full bg-[#f2f2f2] hover:bg-[#e5e5e5] text-[#111] flex items-center justify-center text-xl cursor-pointer transition-colors border-none select-none"
         >
           +
         </button>
