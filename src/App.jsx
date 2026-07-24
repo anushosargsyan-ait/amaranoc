@@ -25,8 +25,8 @@ function App() {
   return (
     <BrowserRouter>
       <div className="w-full min-h-screen text-[#1a1a1a] relative">
-        {/* Header-ին փոխանցում ենք onMapOpen prop-ը */}
-        <Header onMapOpen={() => setIsMapOpen(true)} />
+        {/* Header-ն արդեն առանց onMapOpen-ի է */}
+        <Header />
 
         <Routes>
           <Route
@@ -37,7 +37,7 @@ function App() {
                   <Aside />
                 </div>
                 <div className="flex-1 w-full overflow-hidden">
-                  {/* 👈 Main-ին նույնպես փոխանցում ենք onMapOpen prop-ը */}
+                  {/* Main-ին փոխանցում ենք onMapOpen-ը, որ էջի «Քարտեզ» կոճակն աշխատի */}
                   <Main onMapOpen={() => setIsMapOpen(true)} />
                 </div>
               </div>
