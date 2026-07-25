@@ -2,19 +2,19 @@ import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { db } from "../firebase"; // Ստուգիր firebase.js-ի ուղին
+import { db } from "../firebase"; // Ստուգիր, որ firebase.js-ը ճիշտ տեղում է
 import { collection, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { IoCloseOutline } from "react-icons/io5";
 
-// Default Leaflet marker icon fix
-import markerIconPng from "leaflet/dist/images/marker-icon.png";
-import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
-
+// ✅ CDN-ից վերցնելը 100%-ով կանխում է Vite Build Error-ները
 const customIcon = new L.Icon({
-  iconUrl: markerIconPng,
-  shadowUrl: markerShadowPng,
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
 const MapModal = ({ isOpen, onClose }) => {
@@ -24,21 +24,19 @@ const MapModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return;
 
-    // 1. Ստանում ենք ընթացիկ օգտատիրոջ տեղադիրքը և գրանցում Firebase-ում
+    // 1. Ստանում ենք ընթացիկ օգտատիրոջ տեղադիրքը և պահում Firebase-ում
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
           setMyLocation([latitude, longitude]);
 
-          // Ստեղծում ենք կամ վերցնում ենք userId (օրինակ` Unique Session ID)
           let userId = localStorage.getItem("app_user_id");
           if (!userId) {
             userId = "user_" + Math.random().toString(36).substring(2, 9);
             localStorage.setItem("app_user_id", userId);
           }
 
-          // Պահում ենք Firebase-ում
           try {
             await setDoc(doc(db, "active_users", userId), {
               id: userId,
@@ -56,21 +54,26 @@ const MapModal = ({ isOpen, onClose }) => {
       );
     }
 
-    // 2. Real-time լսում ենք ԲՈԼՈՐ մուտք եղած օգտատերերի տվյալները
-    const unsubscribe = onSnapshot(collection(db, "active_users"), (snapshot) => {
-      const activeUsersList = [];
-      snapshot.forEach((doc) => {
-        activeUsersList.push(doc.data());
-      });
-      setUsers(activeUsersList);
-    });
+    // 2. Real-time լսում ենք ԲՈԼՈՐ մուտք եղածներին
+    const unsubscribe = onSnapshot(
+      collection(db, "active_users"),
+      (snapshot) => {
+        const activeUsersList = [];
+        snapshot.forEach((doc) => {
+          activeUsersList.push(doc.data());
+        });
+        setUsers(activeUsersList);
+      },
+      (error) => {
+        console.error("Firestore error:", error);
+      }
+    );
 
     return () => unsubscribe();
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  // Հայաստանի / Երևանի կենտրոնը (default)
   const centerPosition = myLocation || [40.1792, 44.4991];
 
   return (
@@ -103,7 +106,7 @@ const MapModal = ({ isOpen, onClose }) => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Պտտվում ենք ԲՈԼՈՐ մուտք գործածների վրայով */}
+            {/* Բոլոր ակտիվ օգտատերերի Marker-ները */}
             {users.map((user) => (
               <Marker
                 key={user.id}
@@ -112,8 +115,12 @@ const MapModal = ({ isOpen, onClose }) => {
               >
                 <Popup>
                   <div className="text-center font-sans">
-                    <p className="font-bold text-sm m-0">Օգտատեր #{user.id.slice(-4)}</p>
-                    <span className="text-xs text-green-600 font-semibold">● Ակտիվ է</span>
+                    <p className="font-bold text-sm m-0">
+                      Օգտատեր #{user.id ? user.id.slice(-4) : "—"}
+                    </p>
+                    <span className="text-xs text-green-600 font-semibold">
+                      ● Ակտիվ է
+                    </span>
                   </div>
                 </Popup>
               </Marker>
