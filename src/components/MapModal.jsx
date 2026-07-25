@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { auth, googleProvider, db } from "../firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
@@ -17,16 +17,27 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// Default կոորդինատ (Երևան)՝ եթե GPS-ը չմիանա
+// Default Երևան
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
+
+// Oգնող component՝ քարտեզի կենտրոնը ճիշտ դիրքի վրա տեղափոխելու համար
+const ChangeView = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.setView(center, 13);
+    }
+  }, [center, map]);
+  return null;
+};
 
 const MapModal = ({ isOpen, onClose }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Լսում ենք Auth-ի վիճակը
+  // 1. Auth Listener
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -38,7 +49,7 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeAuth();
   }, [isOpen]);
 
-  // 2. Ֆունկցիա՝ տեղադիրքը ստանալու և Firebase-ում պահելու համար
+  // 2. Ճշգրիտ Geolocation ստանալն ու Firebase-ում պահելը
   const saveUserLocation = (user) => {
     if (!user) return;
 
@@ -50,9 +61,9 @@ const MapModal = ({ isOpen, onClose }) => {
             id: user.uid,
             name: user.displayName || "Անանուն",
             photo: user.photoURL || "",
-            lat: lat,
-            lng: lng,
-            lastOnline: new Date(),
+            lat: Number(lat),
+            lng: Number(lng),
+            updatedAt: Date.now(), // Ժամանակը մաքրման համար
           },
           { merge: true }
         );
@@ -61,24 +72,27 @@ const MapModal = ({ isOpen, onClose }) => {
       }
     };
 
-    if (navigator.geolocation) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           updateUserInDb(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           console.warn("Geolocation warning:", error.message);
-          // Եթե GPS թույլտվություն չտվեց, պահում ենք default կոորդինատով
           updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
         },
-        { timeout: 10000, enableHighAccuracy: true }
+        {
+          enableHighAccuracy: true, // 👈 Առավելագույն ճշգրտություն (GPS)
+          timeout: 15000,
+          maximumAge: 0,
+        }
       );
     } else {
       updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
     }
   };
 
-  // 3. Real-time լսում ենք active_users collection-ը
+  // 3. Firestore Real-time listener (միայն ակտիվ օգտատերերին)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -86,24 +100,30 @@ const MapModal = ({ isOpen, onClose }) => {
       collection(db, "active_users"),
       (snapshot) => {
         const activeUsersList = [];
+        const now = Date.now();
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // Ստուգում ենք, որ lat ու lng անպայման թիվ լինեն
-          if (data.lat && data.lng) {
+          // Ստուգում ենք կոորդինատները + որ 24 ժամից հին չլինի
+          if (
+            data.lat &&
+            data.lng &&
+            (!data.updatedAt || now - data.updatedAt < ONE_DAY_MS)
+          ) {
             activeUsersList.push(data);
           }
         });
         setUsers(activeUsersList);
       },
       (error) => {
-        console.error("Firestore snapshot error:", error);
+        console.error("Firestore error:", error);
       }
     );
 
     return () => unsubscribeSnapshot();
   }, [isOpen, currentUser]);
 
-  // Google Login
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
@@ -120,7 +140,7 @@ const MapModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Գտնում ենք ընթացիկ օգտատիրոջ կոորդինատները քարտեզի կենտրոնացման համար
+  // Քո անձնական տվյալները
   const myData = users.find((u) => u.id === currentUser?.uid);
   const centerPosition = myData
     ? [myData.lat, myData.lng]
@@ -130,7 +150,7 @@ const MapModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-[900px] h-[600px] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col">
         
-        {/* Modal Header */}
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white z-10">
           <h3 className="text-lg font-bold text-gray-800 m-0">
             {currentUser
@@ -145,7 +165,7 @@ const MapModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Modal Content */}
+        {/* Body */}
         {!currentUser ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-gray-50">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 text-blue-600">
@@ -155,7 +175,7 @@ const MapModal = ({ isOpen, onClose }) => {
               Մուտք գործեք Google-ով
             </h2>
             <p className="text-gray-600 max-w-[400px] mb-6 text-sm">
-              Քարտեզի վրա մյուս օգտատերերին տեսնելու և ձեր տեղադիրքը ցուցադրելու համար անհրաժեշտ է մուտք գործել։
+              Քարտեզի վրա մյուս օգտատերերին տեսնելու համար անհրաժեշտ է մուտք գործել։
             </p>
             <button
               onClick={handleGoogleLogin}
@@ -170,10 +190,11 @@ const MapModal = ({ isOpen, onClose }) => {
           <div className="flex-1 w-full h-full relative">
             <MapContainer
               center={centerPosition}
-              zoom={12}
+              zoom={13}
               scrollWheelZoom={true}
               style={{ width: "100%", height: "100%" }}
             >
+              <ChangeView center={centerPosition} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
