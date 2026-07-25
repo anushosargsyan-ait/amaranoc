@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
-import { auth, googleProvider, db } from "../firebase"; // Ստուգիր firebase.js-ի ուղին
+import { auth, googleProvider, db } from "../firebase";
 import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import { collection, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { IoCloseOutline } from "react-icons/io5";
@@ -17,75 +17,100 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+// Default կոորդինատ (Երևան)՝ եթե GPS-ը չմիանա
+const DEFAULT_LAT = 40.1792;
+const DEFAULT_LNG = 44.4991;
+
 const MapModal = ({ isOpen, onClose }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
-  const [myLocation, setMyLocation] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 1. Ստուգում ենք՝ արդյոք օգտատերը մուտք գործած է
+  // 1. Լսում ենք Auth-ի վիճակը
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-      } else {
-        setCurrentUser(null);
+      setCurrentUser(user);
+      if (user && isOpen) {
+        saveUserLocation(user);
       }
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [isOpen]);
 
-  // 2. Եթե մուտք է գործած, վերցնում ենք location-ը ու պահում Firebase-ում
-  useEffect(() => {
-    if (!isOpen || !currentUser) return;
+  // 2. Ֆունկցիա՝ տեղադիրքը ստանալու և Firebase-ում պահելու համար
+  const saveUserLocation = (user) => {
+    if (!user) return;
+
+    const updateUserInDb = async (lat, lng) => {
+      try {
+        await setDoc(
+          doc(db, "active_users", user.uid),
+          {
+            id: user.uid,
+            name: user.displayName || "Անանուն",
+            photo: user.photoURL || "",
+            lat: lat,
+            lng: lng,
+            lastOnline: new Date(),
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        console.error("Firebase save error:", err);
+      }
+    };
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setMyLocation([latitude, longitude]);
-
-          try {
-            await setDoc(
-              doc(db, "active_users", currentUser.uid),
-              {
-                id: currentUser.uid,
-                name: currentUser.displayName || "Անանուն",
-                photo: currentUser.photoURL || "",
-                lat: latitude,
-                lng: longitude,
-                lastOnline: new Date(),
-              },
-              { merge: true }
-            );
-          } catch (error) {
-            console.error("Error saving user location:", error);
-          }
+        (position) => {
+          updateUserInDb(position.coords.latitude, position.coords.longitude);
         },
         (error) => {
-          console.error("Geolocation error:", error);
-        }
+          console.warn("Geolocation warning:", error.message);
+          // Եթե GPS թույլտվություն չտվեց, պահում ենք default կոորդինատով
+          updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
+        },
+        { timeout: 10000, enableHighAccuracy: true }
       );
+    } else {
+      updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
     }
+  };
 
-    // Real-time լսում ենք բոլոր ակտիվ օգտատերերին
-    const unsubscribeSnapshot = onSnapshot(collection(db, "active_users"), (snapshot) => {
-      const activeUsersList = [];
-      snapshot.forEach((doc) => {
-        activeUsersList.push(doc.data());
-      });
-      setUsers(activeUsersList);
-    });
+  // 3. Real-time լսում ենք active_users collection-ը
+  useEffect(() => {
+    if (!isOpen || !currentUser) return;
+
+    const unsubscribeSnapshot = onSnapshot(
+      collection(db, "active_users"),
+      (snapshot) => {
+        const activeUsersList = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // Ստուգում ենք, որ lat ու lng անպայման թիվ լինեն
+          if (data.lat && data.lng) {
+            activeUsersList.push(data);
+          }
+        });
+        setUsers(activeUsersList);
+      },
+      (error) => {
+        console.error("Firestore snapshot error:", error);
+      }
+    );
 
     return () => unsubscribeSnapshot();
   }, [isOpen, currentUser]);
 
-  // Google Login ֆունկցիա
+  // Google Login
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user) {
+        saveUserLocation(result.user);
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
     } finally {
@@ -95,7 +120,11 @@ const MapModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const centerPosition = myLocation || [40.1792, 44.4991];
+  // Գտնում ենք ընթացիկ օգտատիրոջ կոորդինատները քարտեզի կենտրոնացման համար
+  const myData = users.find((u) => u.id === currentUser?.uid);
+  const centerPosition = myData
+    ? [myData.lat, myData.lng]
+    : [DEFAULT_LAT, DEFAULT_LNG];
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -118,7 +147,6 @@ const MapModal = ({ isOpen, onClose }) => {
 
         {/* Modal Content */}
         {!currentUser ? (
-          /* 👈 ԵԹԵ ՄՈՒՏՔ ԵՂԱԾ ՉԷ՝ ՑՈՒՅՑ Է ՏԱԼԻՍ GOOGLE LOGIN ԿՈՃԱԿԸ */
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center bg-gray-50">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 text-blue-600">
               <FcGoogle size={36} />
@@ -139,7 +167,6 @@ const MapModal = ({ isOpen, onClose }) => {
             </button>
           </div>
         ) : (
-          /* 👈 ԵԹԵ ՄՈՒՏՔ ԵՂԱԾ Է՝ ԲԱՑՈՒՄ Է ՔԱՐՏԵԶԸ */
           <div className="flex-1 w-full h-full relative">
             <MapContainer
               center={centerPosition}
