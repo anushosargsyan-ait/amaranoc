@@ -7,7 +7,6 @@ import { collection, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { IoCloseOutline } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
 
-// Standard Leaflet Icon
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -22,14 +21,15 @@ const customIcon = new L.Icon({
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
 
-// Օգնող Component՝ միայն առաջին անգամ քարտեզը օգտատիրոջ դիրքի վրա կենտրոնացնելու համար
+// Օգնող Component՝ միայն ԱՌԱՋԻՆ ԱՆԳԱՄ քարտեզը օգտատիրոջ դիրքի վրա կենտրոնացնելու համար
+// (Որպեսզի ուրիշի քայլելը նայելիս քարտեզը քեզ հետ չքաշի քո վրա)
 const ChangeView = ({ center }) => {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
   useEffect(() => {
     if (center && center[0] && center[1] && !hasCentered) {
-      map.setView(center, 13);
+      map.setView(center, 15); // Zoom level-ը սարքել ենք 15, որ մոտիկից երևա քայլելը
       setHasCentered(true);
     }
   }, [center, map, hasCentered]);
@@ -42,7 +42,7 @@ const MapModal = ({ isOpen, onClose }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Firebase Auth Listener
+  // 1. Auth Listener
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -51,13 +51,13 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. Real-time Live Tracking (Անընդհատ հետևում ու թարմացնում է դիրքը)
+  // 2. LIVE TRACKING (Անընդհատ 2 վայրկյանը մեկ կամ շարժվելուն պես ուղարկում է Firestore)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
     let watchId = null;
 
-    // Ֆունկցիա՝ Firestore-ում կոորդինատները թարմացնելու համար
+    // Firebase-ում դիրքը թարմացնող ֆունկցիա
     const updateUserInDb = async (lat, lng) => {
       try {
         await setDoc(
@@ -77,50 +77,55 @@ const MapModal = ({ isOpen, onClose }) => {
       }
     };
 
-    // Լոկացիան ստանալու ֆունկցիա
-    const fetchCurrentPosition = () => {
+    // GPS-ից դիրքը վերցնելու ֆունկցիա
+    const getRealtimeLocation = () => {
       if ("geolocation" in navigator) {
         navigator.geolocation.getCurrentPosition(
-          (pos) => updateUserInDb(pos.coords.latitude, pos.coords.longitude),
-          (err) => console.warn("Geolocation warning:", err.message),
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+          (pos) => {
+            updateUserInDb(pos.coords.latitude, pos.coords.longitude);
+          },
+          (err) => console.warn("GPS Warning:", err.message),
+          {
+            enableHighAccuracy: true, // 👈 Պարտադիր GPS, ոչ թե IP/Wi-Fi
+            maximumAge: 0,            // 👈 Չօգտագործել հին (քեշավորված) լոկացիա
+            timeout: 5000,
+          }
         );
       }
     };
 
-    if ("geolocation" in navigator) {
-      // Անմիջապես վերցնում ենք առաջին դիրքը
-      fetchCurrentPosition();
+    // Առաջին հարցումը անմիջապես
+    getRealtimeLocation();
 
-      // Միացնում ենք watchPosition-ը GPS շարժումները որսալու համար
+    // 1. GPS Watcher (Երբ քայլում է ու GPS-ը նոր կոորդինատ է որսում)
+    if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          updateUserInDb(position.coords.latitude, position.coords.longitude);
+        (pos) => {
+          updateUserInDb(pos.coords.latitude, pos.coords.longitude);
         },
-        (error) => console.warn("Watch error:", error.message),
+        (err) => console.warn("Watch Error:", err.message),
         {
           enableHighAccuracy: true,
           maximumAge: 0,
-          timeout: 10000,
+          timeout: 5000,
         }
       );
-    } else {
-      updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
     }
 
-    // Ֆիքսված Interval (3 վայրկյանը մեկ), որպեսզի շարժվելն անպայման ֆիքսվի
+    // 2. Force Interval (2 վայրկյանը մեկ ստիպողաբար request անել)
+    // Սա երաշխավորում է, որ անգամ դանդաղ քայլելիս 2 վայրկյանը մեկ request-ը կգնա
     const intervalId = setInterval(() => {
-      fetchCurrentPosition();
-    }, 3000);
+      getRealtimeLocation();
+    }, 2000);
 
-    // Clean up. Երբ Modal-ը փակվում է, անջատում ենք հետևելը
+    // Cleanup՝ երբ պատուհանը փակում է, որ հեռախոսի մարտկոցը չուտի
     return () => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       clearInterval(intervalId);
     };
   }, [isOpen, currentUser]);
 
-  // 3. Firestore Real-time listener (Մյուս ակտիվ օգտատերերին ստանալու համար)
+  // 3. Firestore Real-time listener (Մյուսների քայլելը ՔՈ մոտ ցույց տալու համար)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -129,14 +134,14 @@ const MapModal = ({ isOpen, onClose }) => {
       (snapshot) => {
         const activeUsersList = [];
         const now = Date.now();
-        const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 ժամ
+        const FIVE_MINUTES = 5 * 60 * 1000; // Ցույց տալ միայն վերջին 5 րոպեում ակտիվ եղածներին
 
         snapshot.forEach((doc) => {
           const data = doc.data();
           if (
             data.lat &&
             data.lng &&
-            (!data.updatedAt || now - data.updatedAt < ONE_DAY_MS)
+            (!data.updatedAt || now - data.updatedAt < FIVE_MINUTES)
           ) {
             activeUsersList.push(data);
           }
@@ -151,7 +156,6 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeSnapshot();
   }, [isOpen, currentUser]);
 
-  // Google Sign-In
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
@@ -165,7 +169,6 @@ const MapModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Օգտատիրոջ դիրքը քարտեզի սկզբնական կենտրոնի համար
   const myData = users.find((u) => u.id === currentUser?.uid);
   const centerPosition = myData
     ? [myData.lat, myData.lng]
@@ -173,10 +176,10 @@ const MapModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      {/* CSS Անիմացիա՝ Մարկերների սահուն տեղաշարժվելու (Smooth Walking effect) համար */}
+      {/* 🔴 ԿԱՐԵՎՈՐ. CSS Սահուն քայլելու (Smooth Walking) անիմացիայի համար */}
       <style>{`
         .leaflet-marker-icon, .leaflet-marker-shadow {
-          transition: transform 1s linear !important;
+          transition: all 1.8s linear !important;
         }
       `}</style>
 
@@ -186,7 +189,7 @@ const MapModal = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white z-10">
           <h3 className="text-lg font-bold text-gray-800 m-0">
             {currentUser
-              ? `Ակտիվ օգտատերեր քարտեզի վրա (${users.length} հոգի)`
+              ? `Live Օգտատերեր (${users.length} հոգի)`
               : "Քարտեզը տեսնելու համար մուտք գործեք"}
           </h3>
           <button
@@ -206,9 +209,6 @@ const MapModal = ({ isOpen, onClose }) => {
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
               Մուտք գործեք Google-ով
             </h2>
-            <p className="text-gray-600 max-w-[400px] mb-6 text-sm">
-              Քարտեզի վրա մյուս օգտատերերին տեսնելու համար անհրաժեշտ է մուտք գործել։
-            </p>
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
@@ -222,7 +222,7 @@ const MapModal = ({ isOpen, onClose }) => {
           <div className="flex-1 w-full h-full relative">
             <MapContainer
               center={centerPosition}
-              zoom={13}
+              zoom={15}
               scrollWheelZoom={true}
               style={{ width: "100%", height: "100%" }}
             >
@@ -253,10 +253,10 @@ const MapModal = ({ isOpen, onClose }) => {
                       )}
                       <div>
                         <p className="font-bold text-sm m-0 text-gray-900 leading-tight">
-                          {user.name}
+                          {user.name} {user.id === currentUser?.uid && "(Դուք)"}
                         </p>
-                        <span className="text-[11px] text-green-600 font-semibold block mt-0.5">
-                          ● Ակտիվ է
+                        <span className="text-[11px] text-green-600 font-semibold block mt-0.5 animate-pulse">
+                          ● Live
                         </span>
                       </div>
                     </div>
