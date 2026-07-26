@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import { auth, googleProvider, db } from "../firebase";
@@ -17,19 +17,16 @@ const customIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-// Default Երևան
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
 
-// Օգնող Component՝ միայն ԱՌԱՋԻՆ ԱՆԳԱՄ քարտեզը օգտատիրոջ դիրքի վրա կենտրոնացնելու համար
-// (Որպեսզի ուրիշի քայլելը նայելիս քարտեզը քեզ հետ չքաշի քո վրա)
 const ChangeView = ({ center }) => {
   const map = useMap();
   const [hasCentered, setHasCentered] = useState(false);
 
   useEffect(() => {
     if (center && center[0] && center[1] && !hasCentered) {
-      map.setView(center, 15); // Zoom level-ը սարքել ենք 15, որ մոտիկից երևա քայլելը
+      map.setView(center, 15);
       setHasCentered(true);
     }
   }, [center, map, hasCentered]);
@@ -47,18 +44,24 @@ const MapModal = ({ isOpen, onClose }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
-
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. LIVE TRACKING (Անընդհատ 2 վայրկյանը մեկ կամ շարժվելուն պես ուղարկում է Firestore)
+  // 2. LIVE TRACKING
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
     let watchId = null;
+    let lastLat = null;
+    let lastLng = null;
 
-    // Firebase-ում դիրքը թարմացնող ֆունկցիա
     const updateUserInDb = async (lat, lng) => {
+      // Խնայում ենք Firestore request-ները, եթե կոորդինատը չի փոխվել
+      if (lat === lastLat && lng === lastLng) return;
+      
+      lastLat = lat;
+      lastLng = lng;
+
       try {
         await setDoc(
           doc(db, "active_users", currentUser.uid),
@@ -77,55 +80,27 @@ const MapModal = ({ isOpen, onClose }) => {
       }
     };
 
-    // GPS-ից դիրքը վերցնելու ֆունկցիա
-    const getRealtimeLocation = () => {
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            updateUserInDb(pos.coords.latitude, pos.coords.longitude);
-          },
-          (err) => console.warn("GPS Warning:", err.message),
-          {
-            enableHighAccuracy: true, // 👈 Պարտադիր GPS, ոչ թե IP/Wi-Fi
-            maximumAge: 0,            // 👈 Չօգտագործել հին (քեշավորված) լոկացիա
-            timeout: 5000,
-          }
-        );
-      }
-    };
-
-    // Առաջին հարցումը անմիջապես
-    getRealtimeLocation();
-
-    // 1. GPS Watcher (Երբ քայլում է ու GPS-ը նոր կոորդինատ է որսում)
+    // Geolocation Watcher
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
           updateUserInDb(pos.coords.latitude, pos.coords.longitude);
         },
-        (err) => console.warn("Watch Error:", err.message),
+        (err) => console.warn("GPS Watch Error:", err.message),
         {
           enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 5000,
+          maximumAge: 1000, // 1 վայրկյան քեշ
+          timeout: 10000,
         }
       );
     }
 
-    // 2. Force Interval (2 վայրկյանը մեկ ստիպողաբար request անել)
-    // Սա երաշխավորում է, որ անգամ դանդաղ քայլելիս 2 վայրկյանը մեկ request-ը կգնա
-    const intervalId = setInterval(() => {
-      getRealtimeLocation();
-    }, 2000);
-
-    // Cleanup՝ երբ պատուհանը փակում է, որ հեռախոսի մարտկոցը չուտի
     return () => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-      clearInterval(intervalId);
     };
   }, [isOpen, currentUser]);
 
-  // 3. Firestore Real-time listener (Մյուսների քայլելը ՔՈ մոտ ցույց տալու համար)
+  // 3. Firestore Listener (Realtime)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -134,7 +109,7 @@ const MapModal = ({ isOpen, onClose }) => {
       (snapshot) => {
         const activeUsersList = [];
         const now = Date.now();
-        const FIVE_MINUTES = 5 * 60 * 1000; // Ցույց տալ միայն վերջին 5 րոպեում ակտիվ եղածներին
+        const FIVE_MINUTES = 5 * 60 * 1000;
 
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -148,9 +123,7 @@ const MapModal = ({ isOpen, onClose }) => {
         });
         setUsers(activeUsersList);
       },
-      (error) => {
-        console.error("Firestore error:", error);
-      }
+      (error) => console.error("Firestore error:", error)
     );
 
     return () => unsubscribeSnapshot();
@@ -176,13 +149,6 @@ const MapModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      {/* 🔴 ԿԱՐԵՎՈՐ. CSS Սահուն քայլելու (Smooth Walking) անիմացիայի համար */}
-      <style>{`
-        .leaflet-marker-icon, .leaflet-marker-shadow {
-          transition: all 1.8s linear !important;
-        }
-      `}</style>
-
       <div className="relative w-full max-w-[900px] h-[600px] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col">
         
         {/* Header */}
