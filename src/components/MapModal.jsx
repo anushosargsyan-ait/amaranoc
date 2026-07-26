@@ -21,7 +21,7 @@ const customIcon = new L.Icon({
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
 
-// Oգնող component՝ քարտեզի կենտրոնը ճիշտ դիրքի վրա տեղափոխելու համար
+// Օգնող component՝ քարտեզի կենտրոնը ճիշտ դիրքի վրա տեղափոխելու համար
 const ChangeView = ({ center }) => {
   const map = useMap();
   useEffect(() => {
@@ -41,29 +41,28 @@ const MapModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
-      if (user && isOpen) {
-        saveUserLocation(user);
-      }
     });
 
     return () => unsubscribeAuth();
-  }, [isOpen]);
+  }, []);
 
-  // 2. Ճշգրիտ Geolocation ստանալն ու Firebase-ում պահելը
-  const saveUserLocation = (user) => {
-    if (!user) return;
+  // 2. Real-time Live Location Tracker (watchPosition)
+  useEffect(() => {
+    if (!isOpen || !currentUser) return;
+
+    let watchId = null;
 
     const updateUserInDb = async (lat, lng) => {
       try {
         await setDoc(
-          doc(db, "active_users", user.uid),
+          doc(db, "active_users", currentUser.uid),
           {
-            id: user.uid,
-            name: user.displayName || "Անանուն",
-            photo: user.photoURL || "",
+            id: currentUser.uid,
+            name: currentUser.displayName || "Անանուն",
+            photo: currentUser.photoURL || "",
             lat: Number(lat),
             lng: Number(lng),
-            updatedAt: Date.now(), // Ժամանակը մաքրման համար
+            updatedAt: Date.now(),
           },
           { merge: true }
         );
@@ -73,7 +72,8 @@ const MapModal = ({ isOpen, onClose }) => {
     };
 
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
+      // watchPosition-ը ավտոմատ կանչվում է ամեն անգամ, երբ դիրքը փոխվում է
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
           updateUserInDb(position.coords.latitude, position.coords.longitude);
         },
@@ -82,17 +82,24 @@ const MapModal = ({ isOpen, onClose }) => {
           updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
         },
         {
-          enableHighAccuracy: true, // 👈 Առավելագույն ճշգրտություն (GPS)
-          timeout: 15000,
-          maximumAge: 0,
+          enableHighAccuracy: true, // Մաքսիմալ GPS ճշգրտություն
+          timeout: 10000,
+          maximumAge: 0,            // Քեշից չվերցնել, միշտ թարմ տվյալ
         }
       );
     } else {
       updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
     }
-  };
 
-  // 3. Firestore Real-time listener (միայն ակտիվ օգտատերերին)
+    // Երբ Modal-ը փակվում է կամ user-ը դուրս է գալիս, անջատում ենք tracking-ը
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [isOpen, currentUser]);
+
+  // 3. Firestore Real-time listener (մյուս ակտիվ օգտատերերին ստանալու համար)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -105,7 +112,6 @@ const MapModal = ({ isOpen, onClose }) => {
 
         snapshot.forEach((doc) => {
           const data = doc.data();
-          // Ստուգում ենք կոորդինատները + որ 24 ժամից հին չլինի
           if (
             data.lat &&
             data.lng &&
@@ -127,10 +133,7 @@ const MapModal = ({ isOpen, onClose }) => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        saveUserLocation(result.user);
-      }
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Google sign-in error:", error);
     } finally {
@@ -140,7 +143,6 @@ const MapModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Քո անձնական տվյալները
   const myData = users.find((u) => u.id === currentUser?.uid);
   const centerPosition = myData
     ? [myData.lat, myData.lng]
