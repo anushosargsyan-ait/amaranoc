@@ -7,6 +7,7 @@ import { collection, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { IoCloseOutline } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
 
+// Standard Leaflet Icon
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -21,14 +22,18 @@ const customIcon = new L.Icon({
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
 
-// Օգնող component՝ քարտեզի կենտրոնը ճիշտ դիրքի վրա տեղափոխելու համար
+// Օգնող Component՝ միայն առաջին անգամ քարտեզը օգտատիրոջ դիրքի վրա կենտրոնացնելու համար
 const ChangeView = ({ center }) => {
   const map = useMap();
+  const [hasCentered, setHasCentered] = useState(false);
+
   useEffect(() => {
-    if (center && center[0] && center[1]) {
+    if (center && center[0] && center[1] && !hasCentered) {
       map.setView(center, 13);
+      setHasCentered(true);
     }
-  }, [center, map]);
+  }, [center, map, hasCentered]);
+
   return null;
 };
 
@@ -37,7 +42,7 @@ const MapModal = ({ isOpen, onClose }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 1. Auth Listener
+  // 1. Firebase Auth Listener
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
@@ -46,12 +51,13 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. Real-time Live Location Tracker (watchPosition)
+  // 2. Real-time Live Tracking (Անընդհատ հետևում ու թարմացնում է դիրքը)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
     let watchId = null;
 
+    // Ֆունկցիա՝ Firestore-ում կոորդինատները թարմացնելու համար
     const updateUserInDb = async (lat, lng) => {
       try {
         await setDoc(
@@ -71,35 +77,50 @@ const MapModal = ({ isOpen, onClose }) => {
       }
     };
 
+    // Լոկացիան ստանալու ֆունկցիա
+    const fetchCurrentPosition = () => {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => updateUserInDb(pos.coords.latitude, pos.coords.longitude),
+          (err) => console.warn("Geolocation warning:", err.message),
+          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+      }
+    };
+
     if ("geolocation" in navigator) {
-      // watchPosition-ը ավտոմատ կանչվում է ամեն անգամ, երբ դիրքը փոխվում է
+      // Անմիջապես վերցնում ենք առաջին դիրքը
+      fetchCurrentPosition();
+
+      // Միացնում ենք watchPosition-ը GPS շարժումները որսալու համար
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           updateUserInDb(position.coords.latitude, position.coords.longitude);
         },
-        (error) => {
-          console.warn("Geolocation warning:", error.message);
-          updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
-        },
+        (error) => console.warn("Watch error:", error.message),
         {
-          enableHighAccuracy: true, // Մաքսիմալ GPS ճշգրտություն
+          enableHighAccuracy: true,
+          maximumAge: 0,
           timeout: 10000,
-          maximumAge: 0,            // Քեշից չվերցնել, միշտ թարմ տվյալ
         }
       );
     } else {
       updateUserInDb(DEFAULT_LAT, DEFAULT_LNG);
     }
 
-    // Երբ Modal-ը փակվում է կամ user-ը դուրս է գալիս, անջատում ենք tracking-ը
+    // Ֆիքսված Interval (3 վայրկյանը մեկ), որպեսզի շարժվելն անպայման ֆիքսվի
+    const intervalId = setInterval(() => {
+      fetchCurrentPosition();
+    }, 3000);
+
+    // Clean up. Երբ Modal-ը փակվում է, անջատում ենք հետևելը
     return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      clearInterval(intervalId);
     };
   }, [isOpen, currentUser]);
 
-  // 3. Firestore Real-time listener (մյուս ակտիվ օգտատերերին ստանալու համար)
+  // 3. Firestore Real-time listener (Մյուս ակտիվ օգտատերերին ստանալու համար)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -108,7 +129,7 @@ const MapModal = ({ isOpen, onClose }) => {
       (snapshot) => {
         const activeUsersList = [];
         const now = Date.now();
-        const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 ժամ
 
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -130,6 +151,7 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeSnapshot();
   }, [isOpen, currentUser]);
 
+  // Google Sign-In
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
@@ -143,6 +165,7 @@ const MapModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  // Օգտատիրոջ դիրքը քարտեզի սկզբնական կենտրոնի համար
   const myData = users.find((u) => u.id === currentUser?.uid);
   const centerPosition = myData
     ? [myData.lat, myData.lng]
@@ -150,6 +173,13 @@ const MapModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      {/* CSS Անիմացիա՝ Մարկերների սահուն տեղաշարժվելու (Smooth Walking effect) համար */}
+      <style>{`
+        .leaflet-marker-icon, .leaflet-marker-shadow {
+          transition: transform 1s linear !important;
+        }
+      `}</style>
+
       <div className="relative w-full max-w-[900px] h-[600px] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col">
         
         {/* Header */}
