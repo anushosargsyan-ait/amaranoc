@@ -28,23 +28,26 @@ const Offer = () => {
     [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[#f98b2d] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer`;
 
   return (
-    <>
-      <div className="flex items-center justify-center gap-6 pt-20">
-        <div className="w-[550px] h-[2px] bg-black flex-shrink-0"></div>
-        <h1 className="text-5xl font-medium font-sans text-center whitespace-nowrap">
+    <div className="w-full px-4 sm:px-6">
+      {/* Վերնագիր և կողքի գծերը */}
+      <div className="flex items-center justify-center gap-3 sm:gap-6 pt-12 sm:pt-20">
+        <div className="hidden sm:block w-[100px] md:w-[300px] lg:w-[550px] h-[2px] bg-black flex-shrink-0"></div>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium font-sans text-center whitespace-nowrap">
           Թեժ առաջարկներ
         </h1>
-        <div className="w-[280px] h-[2px] bg-black flex-shrink-0"></div>
+        <div className="hidden sm:block w-[100px] md:w-[180px] lg:w-[280px] h-[2px] bg-black flex-shrink-0"></div>
       </div>
 
-      {/* Главная карточка с внутренними отступами p-8 и px-12 */}
-      <div className="rounded-3xl w-[86%] border mt-[90px] ml-[105px] p-8 px-12">
-        {/* Флекс-ряд: выстраивает левую и правую часть в одну линию */}
-        <div className="flex items-end justify-between gap-16">
-          {/* ЛЕВАЯ ЧАСТЬ: Выбор валюты */}
+      {/* Գլխավոր քարտ (Responsive լայնությամբ և մարգիններով) */}
+      <div className="w-full max-w-[1320px] mx-auto rounded-3xl border mt-8 sm:mt-[90px] p-6 sm:p-8 lg:px-12 shadow-sm bg-white">
+        
+        {/* Ֆլեքս-շարք: Մոբայլում իրար տակ (col), լայն էկրանին՝ կողք կողքի (row) */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 lg:gap-16 pt-6 lg:pt-0">
+          
+          {/* ՁԱԽ ՄԱՍ: Տարադրամի ընտրություն */}
           <div className="flex-shrink-0">
-            <p className="text-gray-700 font-medium mb-3">Տարադրամ</p>
-            <div className="flex gap-4">
+            <p className="text-gray-700 font-medium mb-3 text-sm sm:text-base">Տարադրամ</p>
+            <div className="flex gap-3 sm:gap-4">
               {arj.map((item, index) => {
                 const isActive = index === activeIndex;
 
@@ -52,7 +55,7 @@ const Offer = () => {
                   <div
                     key={index}
                     onClick={() => setActiveIndex(index)}
-                    className={`flex justify-center items-center w-[42px] h-[42px] border rounded-full cursor-pointer transition-all duration-200 text-lg font-medium
+                    className={`flex justify-center items-center w-[38px] h-[38px] sm:w-[42px] sm:h-[42px] border rounded-full cursor-pointer transition-all duration-200 text-base sm:text-lg font-medium
                       ${
                         isActive
                           ? "bg-black text-white border-black"
@@ -66,26 +69,26 @@ const Offer = () => {
             </div>
           </div>
 
-          {/* ПРАВАЯ ЧАСТЬ: Ползунок цен (занимает всё оставшееся место благодаря flex-1) */}
-          <div className="flex-1 pb-3">
+          {/* ԱՋ ՄԱՍ: Գների սլայդեր */}
+          <div className="flex-1 pb-3 w-full lg:max-w-[700px] mt-4 lg:mt-0">
             <div className="relative w-full h-1 bg-gray-200 rounded-full">
-              {/* Оранжевый лейбл МИН цены */}
+              {/* Օրանջեվի լեյբլ ՄԻՆ գնի */}
               <div
-                className="absolute -top-10 px-3 py-1 bg-[#f98b2d] text-white rounded-full text-sm font-medium -translate-x-1/2 whitespace-nowrap"
+                className="absolute -top-10 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#f98b2d] text-white rounded-full text-xs sm:text-sm font-medium -translate-x-1/2 whitespace-nowrap shadow-sm"
                 style={{ left: `${(minPrice / maxLimit) * 100}%` }}
               >
                 {minPrice.toLocaleString()} {arj[activeIndex]}
               </div>
 
-              {/* Оранжевый лейбл МАКС цены */}
+              {/* Օրանջեվի լեյբլ ՄԱԿՍ գնի */}
               <div
-                className="absolute -top-10 px-3 py-1 bg-[#f98b2d] text-white rounded-full text-sm font-medium -translate-x-1/2 whitespace-nowrap"
+                className="absolute -top-10 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-[#f98b2d] text-white rounded-full text-xs sm:text-sm font-medium -translate-x-1/2 whitespace-nowrap shadow-sm"
                 style={{ left: `${(maxPrice / maxLimit) * 100}%` }}
               >
                 {maxPrice.toLocaleString()} {arj[activeIndex]}
               </div>
 
-              {/* Активная оранжевая полоса */}
+              {/* Ակտիվ օրանջեվի գիծ */}
               <div
                 className="absolute h-1 bg-[#f98b2d] rounded-full"
                 style={{
@@ -94,7 +97,7 @@ const Offer = () => {
                 }}
               ></div>
 
-              {/* Инпуты ползунка */}
+              {/* Ինպուտներ սլայդերի */}
               <input
                 type="range"
                 min="0"
@@ -114,9 +117,10 @@ const Offer = () => {
               />
             </div>
           </div>
+
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

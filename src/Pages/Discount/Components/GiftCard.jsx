@@ -12,10 +12,12 @@ const GiftCard = () => {
   const [selectedPrice, setSelectedPrice] = useState("50,000 ֏");
 
   return (
-    <section className="container mx-auto px-4 md:px-8 py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-7xl mx-auto">
-        <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-sm border border-gray-100 flex flex-col justify-center">
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase tracking-wide leading-tight">
+    <section className="w-full px-4 sm:px-6 py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch max-w-[1320px] mx-auto">
+        
+        {/* ՁԱԽ ՄԱՍ: Տեքստային բլոկ */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-12 shadow-sm border border-gray-100 flex flex-col justify-center">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 uppercase tracking-wide leading-tight">
             ՊԱՏՎԻՐԻ՛Ր <span className="text-[#ff8a22]">ՆՎԵՐ ՔԱՐՏ</span> <br />
             ՔՈ ԿԱՄ ԸՆԿԵՐԵՐԻԴ ՀԱՄԱՐ
           </h2>
@@ -30,11 +32,14 @@ const GiftCard = () => {
           </p>
         </div>
 
-        <div className="bg-gradient-to-br from-[#ff9331] via-[#f37c13] to-[#e46b00] rounded-3xl p-8 lg:p-12 flex flex-col justify-between items-center text-white shadow-lg min-h-[380px]">
+        {/* ԱՋ ՄԱՍ: Նվեր քարտի վիզուալ հատված */}
+        <div className="bg-gradient-to-br from-[#ff9331] via-[#f37c13] to-[#e46b00] rounded-3xl p-6 sm:p-8 lg:p-12 flex flex-col justify-between items-center text-white shadow-lg min-h-[380px]">
+          
+          {/* Լոգո */}
           <div className="text-center mt-2 select-none">
-            <div className="text-2xl sm:text-3xl font-light tracking-[0.25em] flex items-center justify-center font-sans">
+            <div className="text-xl sm:text-2xl lg:text-3xl font-light tracking-[0.25em] flex items-center justify-center font-sans">
               AMARAN
-              <span className="inline-flex flex-col items-center justify-center mx-1 bg-white text-[#f37c13] px-1.5 py-0.5 rounded font-black text-base relative bottom-0.5">
+              <span className="inline-flex flex-col items-center justify-center mx-1 bg-white text-[#f37c13] px-1.5 py-0.5 rounded font-black text-sm sm:text-base relative bottom-0.5">
                 Հ
               </span>
               C.AM
@@ -44,12 +49,13 @@ const GiftCard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 w-full my-8 max-w-md">
+          {/* Գների կոճակների ցանց (Grid) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full my-6 max-w-md">
             {prices.map((price, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedPrice(price)}
-                className={`border border-white/60 rounded-full py-2 px-3 text-sm sm:text-base font-bold text-center tracking-wide transition-all cursor-pointer outline-none
+                className={`border border-white/60 rounded-full py-2.5 px-3 text-sm sm:text-base font-bold text-center tracking-wide transition-all duration-200 cursor-pointer outline-none
                   ${
                     selectedPrice === price
                       ? "bg-white text-[#f37c13] border-white shadow-md scale-105"
@@ -61,10 +67,13 @@ const GiftCard = () => {
             ))}
           </div>
 
-          <button className="bg-[#ff9d3b] hover:bg-[#ffaa4d] text-white font-bold text-base px-10 py-2.5 rounded-full shadow-md transition-all transform active:scale-98 cursor-pointer border border-white/20">
+          {/* Պատվիրել կոճակ */}
+          <button className="w-full sm:w-auto bg-[#ff9d3b] hover:bg-[#ffaa4d] text-white font-bold text-base px-10 py-3 rounded-full shadow-md transition-all transform active:scale-95 cursor-pointer border border-white/20">
             Պատվիրել
           </button>
+
         </div>
+
       </div>
     </section>
   );

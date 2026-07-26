@@ -1,44 +1,47 @@
 const NaxaFooter = () => {
   return (
-    // relative и top-[100px] вместо margin-top
     <div 
-      className="relative top-[100px] w-full h-[600px] bg-cover bg-center"
+      className="relative top-[50px] lg:top-[100px] w-full min-h-[550px] lg:h-[600px] bg-cover bg-center flex items-center justify-center px-4 py-10"
       style={{ backgroundImage: "url('https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=2070&auto=format&fit=crop')" }}
     >
-      {/* Центрируем блок через absolute и translate, задаем жесткую высоту */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1000px] h-[300px] bg-[rgba(30,40,35,0.5)] backdrop-blur-[12px] border border-[rgba(255,255,255,0.15)] rounded-[16px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+      {/* Կենտրոնական բլոկ՝ Flex-ով ու responsive չափսերով (абсолюט-ի փոխարեն հարմարեցված ճկուն layout) */}
+      <div className="w-full max-w-[1000px] bg-[rgba(30,40,35,0.65)] backdrop-blur-[12px] border border-[rgba(255,255,255,0.15)] rounded-[16px] shadow-[0_10px_40px_rgba(0,0,0,0.3)] p-6 sm:p-8 flex flex-col justify-between items-center text-center">
         
-        {/* Позиционируем заголовок */}
-        <h1 className="absolute top-[40px] left-1/2 -translate-x-1/2 text-white text-[32px] w-full text-center flex items-center justify-center before:content-[''] before:h-[2px] before:w-[120px] before:bg-white before:relative before:right-[25px] after:content-[''] after:h-[2px] after:w-[120px] after:bg-white after:relative after:left-[25px]">
+        {/* Заголовок (Responsive տեքստով և հարմարեցված գծիկներով) */}
+        <h1 className="text-white text-[18px] sm:text-[24px] lg:text-[32px] font-bold w-full flex items-center justify-center gap-2 sm:gap-4 my-2 before:content-[''] before:h-[2px] before:w-[40px] sm:before:w-[80px] lg:before:w-[120px] before:bg-white after:content-[''] after:h-[2px] after:w-[40px] sm:after:w-[80px] lg:after:w-[120px] after:bg-white">
           ՏԵՂԱԴՐԵԼ ՀԱՅՏԱՐԱՐՈՒԹՅՈՒՆ
         </h1>
         
-        {/* Позиционируем параграф */}
-        <p className="absolute top-[110px] left-1/2 -translate-x-1/2 text-white text-[15px] w-full text-center">
+        {/* Параграф */}
+        <p className="text-white text-[13px] sm:text-[14px] lg:text-[15px] w-full max-w-[700px] my-4 px-2">
           Մուտքագրեք Ձեր տվյալները նշված դաշտերում և մենք կկապնվենք Ձեզ հետ
         </p>
         
-        {/* Контейнер для инпутов, инпуты расставлены по процентам (left) */}
-        <div className="absolute bottom-[50px] left-0 w-full h-[50px]">
-          {/* Вместо padding используем indent-[15px] */}
+        {/* Контейнер для инпутов: Mobile-ում իրար տակ (flex-col), Desktop-ում իրար կողք (grid) */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+          
           <input 
             placeholder="Անուն Ազգանուն" 
             type="text" 
-            className="absolute left-[3%] w-[22%] h-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.5)]"
+            className="w-full h-[45px] sm:h-[50px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.6)]"
           />
+          
           <input 
             placeholder="Հեռախոսահամար" 
             type="text" 
-            className="absolute left-[28%] w-[22%] h-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.5)]"
+            className="w-full h-[45px] sm:h-[50px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.6)]"
           />
+          
           <input 
             placeholder="Էլ հասցե" 
             type="text" 
-            className="absolute left-[53%] w-[22%] h-full bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.5)]"
+            className="w-full h-[45px] sm:h-[50px] bg-[rgba(0,0,0,0.4)] border border-[rgba(255,255,255,0.3)] rounded-[8px] indent-[15px] text-white text-[14px] outline-none transition-all duration-300 placeholder-[rgba(255,255,255,0.6)] focus:border-white focus:bg-[rgba(0,0,0,0.6)]"
           />
-          <button className="absolute right-[3%] w-[22%] h-full bg-[#f7941d] text-white border-none rounded-[25px] text-[16px] font-bold cursor-pointer transition-all duration-300 hover:bg-[#e08316]">
+          
+          <button className="w-full h-[45px] sm:h-[50px] bg-[#f7941d] text-white border-none rounded-[25px] text-[16px] font-bold cursor-pointer transition-all duration-300 hover:bg-[#e08316] active:scale-95 shadow-md">
             Ուղարկել
           </button>
+
         </div>
 
       </div>

@@ -11,24 +11,31 @@ const ProfileHouseDetails = ({ index }) => {
   const img5 = qardImg[(index + 4) % qardImg.length] || mainImg;
 
   return (
-    // Изменили ширину и высоту: max-w-[1320px] w-[95%] h-[550px]
-    <div className="max-w-[1320px] w-[95%] mx-auto mt-6 flex gap-4 h-[550px]">
-      <div className="w-[60%] relative rounded-[20px] overflow-hidden shadow-sm group">
+    /* 
+      🔴 ԼՈՒԾՈՒՄ․
+      1. h-auto mobile-ում, h-[550px] md-ից սկսած
+      2. flex-col mobile-ում, flex-row md-ից սկսած
+    */
+    <div className="max-w-[1320px] w-[95%] mx-auto mt-4 sm:mt-6 flex flex-col md:flex-row gap-3 sm:gap-4 h-auto md:h-[550px]">
+      
+      {/* Գլխավոր (մեծ) նկարը */}
+      <div className="w-full md:w-[60%] h-[260px] sm:h-[380px] md:h-full relative rounded-[16px] sm:rounded-[20px] overflow-hidden shadow-sm group shrink-0">
         <img
           src={mainImg}
           alt="Main House"
           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
         />
-        <button className="absolute bottom-4 right-4 w-11 h-11 bg-white/80 backdrop-blur-sm flex justify-center items-center rounded-full cursor-pointer border-none shadow-md transition-colors hover:bg-white z-10">
+        <button className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 w-9 h-9 sm:w-11 sm:h-11 bg-white/80 backdrop-blur-sm flex justify-center items-center rounded-full cursor-pointer border-none shadow-md transition-colors hover:bg-white z-10">
           <FontAwesomeIcon
             icon={faHeart}
-            className="text-gray-700 text-[20px]"
+            className="text-gray-700 text-[16px] sm:text-[20px]"
           />
         </button>
       </div>
 
-      <div className="w-[40%] grid grid-cols-2 grid-rows-2 gap-4">
-        <div className="rounded-[20px] overflow-hidden shadow-sm">
+      {/* 4 փոքր նկարները */}
+      <div className="w-full md:w-[40%] grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 h-[220px] sm:h-[320px] md:h-full">
+        <div className="rounded-[12px] sm:rounded-[20px] overflow-hidden shadow-sm">
           <img
             src={img2}
             alt="Gallery 1"
@@ -36,7 +43,7 @@ const ProfileHouseDetails = ({ index }) => {
           />
         </div>
 
-        <div className="rounded-[20px] overflow-hidden shadow-sm">
+        <div className="rounded-[12px] sm:rounded-[20px] overflow-hidden shadow-sm">
           <img
             src={img3}
             alt="Gallery 2"
@@ -44,22 +51,22 @@ const ProfileHouseDetails = ({ index }) => {
           />
         </div>
 
-        <div className="rounded-[20px] overflow-hidden shadow-sm">
+        <div className="rounded-[12px] sm:rounded-[20px] overflow-hidden shadow-sm">
           <img
             src={img4}
-            alt="Gallery 3"
+            alt="Gallery 4"
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
         </div>
 
-        <div className="rounded-[20px] overflow-hidden relative shadow-sm">
+        <div className="rounded-[12px] sm:rounded-[20px] overflow-hidden relative shadow-sm">
           <img
             src={img5}
-            alt="Gallery 4"
+            alt="Gallery 5"
             className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
           />
-          {/* Кнопка "Показать все" */}
-          <button className="absolute bottom-3 right-3 bg-white px-5 py-2 rounded-full text-[14px] font-sans font-medium text-black border border-gray-200 shadow-md cursor-pointer transition-colors hover:bg-gray-100 z-10">
+          {/* «Տեսնել բոլորը» կոճակը */}
+          <button className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-white/90 backdrop-blur-sm px-3 py-1 sm:px-5 sm:py-2 rounded-full text-[11px] sm:text-[14px] font-sans font-medium text-black border border-gray-200 shadow-md cursor-pointer transition-colors hover:bg-white z-10">
             Տեսնել բոլորը
           </button>
         </div>

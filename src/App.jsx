@@ -15,12 +15,18 @@ import Chat from "./components/Chat";
 import { IoCloseOutline } from "react-icons/io5"; 
 import { AiOutlineMessage } from "react-icons/ai"; 
 
+// Ֆիլտրի Drawer-ի և Slider-ի իկոնները
+import { FiSliders, FiX } from "react-icons/fi";
+
 // Քարտեզի Modal-ը
 import MapModal from "./components/MapModal"; 
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  
+  /* 🔴 Mobile Ֆիլտրի State */
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   return (
     <BrowserRouter>
@@ -31,17 +37,75 @@ function App() {
           <Route
             path="/"
             element={
-              <div className="max-w-[1320px] mx-auto px-[15px] xl:px-[20px] flex items-start gap-[30px] mt-[15px] lg:mt-[30px] mb-[50px]">
+              <div className="max-w-[1320px] mx-auto px-[15px] xl:px-[20px] mt-[15px] lg:mt-[30px] mb-[50px]">
                 
-                {/* 👈 Mobile-ում hidden է, Desktop-ում (lg:block) ցույց է տալիս Aside-ը */}
-                <div className="hidden lg:block flex-shrink-0 w-[280px]">
-                  <Aside />
+                {/* 🔴 Mobile "Ֆիլտրեր" կոճակը՝ ճիշտ Main-ի կոճակների չափսերով ու տեսքով */}
+                <div className="lg:hidden w-full mb-[-10px] flex justify-start">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterOpen(true)}
+                    className="flex items-center gap-2 h-[38px] px-4 bg-white border border-black rounded-full text-xs font-semibold hover:bg-gray-50 active:scale-95 transition-all cursor-pointer shadow-sm"
+                  >
+                    <FiSliders className="text-sm text-[#f08c28]" />
+                    <span>Ֆիլտրեր</span>
+                  </button>
                 </div>
 
-                {/* 👈 Mobile-ում Main-ը զբաղեցնում է 100% լայնություն */}
-                <div className="flex-1 w-full overflow-hidden">
-                  <Main onMapOpen={() => setIsMapOpen(true)} />
+                <div className="flex items-start gap-[30px]">
+                  {/* 💻 Desktop Aside-ը (Mobile-ում hidden) */}
+                  <div className="hidden lg:block flex-shrink-0 w-[280px]">
+                    <Aside />
+                  </div>
+
+                  {/* 👈 Main բովանդակությունը (Քո Main.jsx-ը՝ ԱՆՓՈՓՈԽ) */}
+                  <div className="flex-1 w-full min-w-0 overflow-hidden">
+                    <Main onMapOpen={() => setIsMapOpen(true)} />
+                  </div>
                 </div>
+
+                {/* 📱 Mobile Drawer Menu (Բացվող Ֆիլտրի մենյուն) */}
+                {isFilterOpen && (
+                  <div className="fixed inset-0 z-[9999] lg:hidden flex">
+                    {/* Dark Backdrop */}
+                    <div 
+                      className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                      onClick={() => setIsFilterOpen(false)}
+                    />
+
+                    {/* Drawer Pane */}
+                    <div className="relative z-10 w-[85%] max-w-[340px] h-full bg-white flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-300">
+                      
+                      {/* Header */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                        <h3 className="font-bold text-lg text-gray-800">Ֆիլտրեր</h3>
+                        <button 
+                          type="button"
+                          onClick={() => setIsFilterOpen(false)}
+                          className="p-2 rounded-full hover:bg-gray-100 text-gray-600 cursor-pointer"
+                        >
+                          <FiX className="text-xl" />
+                        </button>
+                      </div>
+
+                      {/* Body (Քո <Aside />-ը) */}
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <Aside />
+                      </div>
+
+                      {/* Footer */}
+                      <div className="p-4 border-t border-gray-200 bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setIsFilterOpen(false)}
+                          className="w-full py-3 bg-[#f08c28] text-white font-bold rounded-xl active:scale-95 transition-all shadow-md cursor-pointer"
+                        >
+                          Կիրառել
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
 
               </div>
             }
@@ -64,6 +128,7 @@ function App() {
           <Chat isOpen={isChatOpen} />
 
           <button 
+            type="button"
             onClick={() => setIsChatOpen(!isChatOpen)}
             className={`w-[55px] h-[55px] rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${
               isChatOpen ? "bg-[#e4e6eb] text-black" : "bg-[#007bff] text-white"

@@ -6,12 +6,12 @@ import UniversalDiscount from "./Components/UniversalDiscount";
 
 function Discounts() {
   return (
-    <div className="">
-      <UniversalDiscount></UniversalDiscount>
-      <Cards3Home></Cards3Home>
-      <GiftCard></GiftCard>
-      <Offer></Offer>
-      <CardGrid></CardGrid>
+    <div className="w-full min-h-screen bg-gray-50 flex flex-col gap-6 sm:gap-10 pb-12">
+      <UniversalDiscount />
+      <Cards3Home />
+      <GiftCard />
+      <Offer />
+      <CardGrid />
     </div>
   );
 }

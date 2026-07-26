@@ -10,7 +10,7 @@ import Advantages from "./Region/Advantages";
 
 const Aside = () => {
   return (
-    <aside className="w-80 bg-white border border-[#eaeaea] rounded-[20px] font-sans shadow-sm p-5 flex flex-col gap-6">
+    <aside className="w-full lg:w-80 bg-white border border-[#eaeaea] rounded-[20px] font-sans shadow-sm p-4 sm:p-5 flex flex-col gap-6">
       <Region />
       <Price plc1="Սկսած" plc2="Մինչև" />
       <People />
