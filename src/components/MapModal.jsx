@@ -6,6 +6,7 @@ import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
 import { collection, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { IoCloseOutline } from "react-icons/io5";
 import { FcGoogle } from "react-icons/fc";
+import { MdMyLocation } from "react-icons/md"; // 📍 Կոճակի իկոնկայի համար
 
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -20,16 +21,18 @@ const customIcon = new L.Icon({
 const DEFAULT_LAT = 40.1792;
 const DEFAULT_LNG = 44.4991;
 
-const ChangeView = ({ center }) => {
+// 🔄 Քարտեզի տեսքի և հետևման կառավարում
+const MapController = ({ center, followUser }) => {
   const map = useMap();
-  const [hasCentered, setHasCentered] = useState(false);
 
   useEffect(() => {
-    if (center && center[0] && center[1] && !hasCentered) {
-      map.setView(center, 15);
-      setHasCentered(true);
+    if (center && center[0] && center[1]) {
+      if (followUser) {
+        // panTo-ն ապահովում է սահուն տեղաշարժ դեպի նոր կետ
+        map.panTo(center, { animate: true, duration: 0.8 });
+      }
     }
-  }, [center, map, hasCentered]);
+  }, [center, followUser, map]);
 
   return null;
 };
@@ -38,6 +41,7 @@ const MapModal = ({ isOpen, onClose }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [followUser, setFollowUser] = useState(true); // Սկզբում միացված է հետևելու ռեժիմը
 
   // 1. Auth Listener
   useEffect(() => {
@@ -47,7 +51,7 @@ const MapModal = ({ isOpen, onClose }) => {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. LIVE TRACKING
+  // 2. LIVE TRACKING (GPS)
   useEffect(() => {
     if (!isOpen || !currentUser) return;
 
@@ -56,7 +60,6 @@ const MapModal = ({ isOpen, onClose }) => {
     let lastLng = null;
 
     const updateUserInDb = async (lat, lng) => {
-      // Խնայում ենք Firestore request-ները, եթե կոորդինատը չի փոխվել
       if (lat === lastLat && lng === lastLng) return;
       
       lastLat = lat;
@@ -80,7 +83,6 @@ const MapModal = ({ isOpen, onClose }) => {
       }
     };
 
-    // Geolocation Watcher
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -89,7 +91,7 @@ const MapModal = ({ isOpen, onClose }) => {
         (err) => console.warn("GPS Watch Error:", err.message),
         {
           enableHighAccuracy: true,
-          maximumAge: 1000, // 1 վայրկյան քեշ
+          maximumAge: 1000,
           timeout: 10000,
         }
       );
@@ -186,13 +188,29 @@ const MapModal = ({ isOpen, onClose }) => {
           </div>
         ) : (
           <div className="flex-1 w-full h-full relative">
+            
+            {/* 📍 Լոկացիայի վերադարձման կոճակ (ինչպես նավիգատորներում) */}
+            <button
+              onClick={() => setFollowUser(true)}
+              className={`absolute bottom-6 right-6 z-[1000] p-3 rounded-full shadow-lg transition-all cursor-pointer flex items-center justify-center ${
+                followUser 
+                  ? "bg-blue-600 text-white" 
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+              }`}
+              title="Կենտրոնացնել իմ վրա"
+            >
+              <MdMyLocation size={24} />
+            </button>
+
             <MapContainer
               center={centerPosition}
-              zoom={15}
+              zoom={16}
               scrollWheelZoom={true}
               style={{ width: "100%", height: "100%" }}
+              // Եթե օգտատերը ձեռքով քարտեզը շարժի, անջատում ենք ավտո-հետևումը (ինչպես Google Maps-ում)
+              onDragStart={() => setFollowUser(false)}
             >
-              <ChangeView center={centerPosition} />
+              <MapController center={centerPosition} followUser={followUser} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
