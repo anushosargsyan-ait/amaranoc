@@ -4,7 +4,7 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 import { 
   collection, doc, setDoc, query, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, where
 } from "firebase/firestore";
-import WaveSurfer from "wavesurfer.js"; // 👈 Ալիքների համար
+import WaveSurfer from "wavesurfer.js";
 
 const iceServers = {
   iceServers: [
@@ -62,11 +62,11 @@ function VoicePlayer({ audioUrl, isMe }) {
   };
 
   return (
-    <div className="flex items-center gap-3 p-1 min-w-[220px]">
+    <div className="flex items-center gap-3 p-1 min-w-[180px] sm:min-w-[220px]">
       <button
         type="button"
         onClick={togglePlay}
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition ${
+        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm transition ${
           isMe ? "bg-white text-[#007bff]" : "bg-[#007bff] text-white"
         }`}
       >
@@ -86,6 +86,14 @@ function VoicePlayer({ audioUrl, isMe }) {
 // 2. ՀԻՄՆԱԿԱՆ CHAT COMPONENT
 // ==========================================
 export default function Chat({ isOpen }) {
+  // Ներքին սթեյթ, որը երաշխավորում է փակվելը անկախ ծնող կոմպոնենտից
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Եթե արտաքին isOpen-ը փոխվի true, նորից ցույց տալու համար
+  useEffect(() => {
+    if (isOpen) setIsVisible(true);
+  }, [isOpen]);
+
   const [user, setUser] = useState(null); 
   const [usersList, setUsersList] = useState([]); 
   const [selectedUser, setSelectedUser] = useState(null); 
@@ -106,7 +114,7 @@ export default function Chat({ isOpen }) {
   const [callerInfo, setCallerInfo] = useState(null);
   const callTimeoutRef = useRef(null); 
   const callStartTimeRef = useRef(null); 
-  const isLoggedRef = useRef(false); // 👈 Կրկնակի SMS-ներից պաշտպանվելու ֆլեգ
+  const isLoggedRef = useRef(false);
 
   const localStreamRef = useRef(null);
   const pcRef = useRef(null);
@@ -114,7 +122,7 @@ export default function Chat({ isOpen }) {
   const remoteVideoRef = useRef(null);
   const dummySpace = useRef();
 
-  // Օգտատիրոջ մուտք, Ցուցակ և Activity Status (Online/Offline)
+  // Օգտատիրոջ մուտք, Ցուցակ և Activity Status
   useEffect(() => {
     let unsubscribeUsers = () => {};
 
@@ -161,7 +169,7 @@ export default function Chat({ isOpen }) {
     };
   }, []);
 
-  // Չընթերցված նամակների քանակը (Real-time)
+  // Չընթերցված նամակների քանակը
   useEffect(() => {
     if (!user) return;
 
@@ -243,7 +251,7 @@ export default function Chat({ isOpen }) {
     if (!selectedUser || !user) return;
 
     try {
-      isLoggedRef.current = false; // 👈 Զրոյացնում ենք ֆլեգը նոր զանգի համար
+      isLoggedRef.current = false;
       setCallType(type);
       setCallState("dialing");
 
@@ -306,7 +314,7 @@ export default function Chat({ isOpen }) {
     clearTimeout(callTimeoutRef.current);
 
     try {
-      isLoggedRef.current = false; // 👈 Զրոյացնում ենք ֆլեգը նաև պատասխանողի մոտ
+      isLoggedRef.current = false;
       setIsIncomingCall(false);
       setCallState("active");
       callStartTimeRef.current = Date.now(); 
@@ -359,13 +367,11 @@ export default function Chat({ isOpen }) {
     cleanupCall("ended");
   };
 
-  // ԶԱՆԳԵՐԻ ՊԱՏՄՈՒԹՅԱՆ ԳՐԱՆՑՈՒՄԸ ՉԱՏՈՒՄ
   const cleanupCall = async (finalStatus) => {
     clearTimeout(callTimeoutRef.current);
 
-    // 👈 ՊԱՇՏՊԱՆՈՒԹՅՈՒՆ: Եթե արդեն գրանցվել է այս զանգը, արգելափակում ենք կրկնությունը
     if (activeCallId && selectedUser && user && !isLoggedRef.current) {
-      isLoggedRef.current = true; // Անմիջապես սահմանում ենք true
+      isLoggedRef.current = true;
 
       let logType = "missed"; 
       let durationText = "";
@@ -394,7 +400,7 @@ export default function Chat({ isOpen }) {
         });
       } catch (e) { 
         console.error(e); 
-        isLoggedRef.current = false; // Սխալի դեպքում ետ ենք բերում
+        isLoggedRef.current = false;
       }
     }
 
@@ -451,10 +457,11 @@ export default function Chat({ isOpen }) {
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
   const handleSignOut = async () => { if (user) { await setDoc(doc(db, "users", user.uid), { status: "offline" }, { merge: true }); } signOut(auth); };
 
-  if (!isOpen) return null;
+  // Եթե արտաքինից փակ է կամ ներսից են սեղմել X-ը, չի ցուցադրվում
+  if (!isOpen || !isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-white border border-[#e4e6eb] rounded-[16px] shadow-2xl w-[550px] h-[400px] overflow-hidden flex font-sans text-black">
+    <div className="fixed inset-0 sm:inset-auto sm:bottom-4 sm:right-4 z-50 bg-white border border-[#e4e6eb] sm:rounded-[16px] shadow-2xl w-full h-full sm:w-[500px] sm:h-[480px] lg:w-[600px] lg:h-[550px] overflow-hidden flex flex-col font-sans text-black">
       
       {/* --- CALL INTERFACE OVERLAY --- */}
       {callState !== "idle" && (
@@ -473,9 +480,9 @@ export default function Chat({ isOpen }) {
           {callState !== "rejected" && callState !== "no_answer" && (
             <>
               {callType === "video" && (
-                <div className="relative w-full flex-1 flex items-center justify-center bg-gray-900 rounded-lg overflow-hidden">
+                <div className="relative w-full flex-1 flex items-center justify-center bg-gray-900 rounded-lg overflow-hidden max-h-[300px]">
                   <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                  <video ref={localVideoRef} autoPlay playsInline muted className="absolute top-2 right-2 w-24 h-24 object-cover border-2 border-white rounded shadow-md" />
+                  <video ref={localVideoRef} autoPlay playsInline muted className="absolute top-2 right-2 w-20 h-20 sm:w-24 sm:h-24 object-cover border-2 border-white rounded shadow-md" />
                 </div>
               )}
 
@@ -501,13 +508,32 @@ export default function Chat({ isOpen }) {
       )}
 
       {!user ? (
-        <div className="w-full flex flex-col items-center justify-center p-5 gap-4">
-          <button onClick={handleLogin} className="bg-[#007bff] text-white px-5 py-2.5 rounded-lg text-sm font-medium">Մուտք Google-ով</button>
+        <div className="w-full h-full flex flex-col items-center justify-center p-5 gap-4 relative">
+          {/* Հիմնական փակելու կոճակ (մուտք չեղած վիճակում) */}
+          <button 
+            type="button"
+            onClick={() => setIsVisible(false)}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-700 font-bold text-sm shadow-md cursor-pointer z-50 transition-colors"
+          >
+            ✕
+          </button>
+          <button onClick={handleLogin} className="bg-[#007bff] text-white px-6 py-3 rounded-xl text-sm font-medium shadow-md">Մուտք Google-ով</button>
         </div>
       ) : (
-        <>
+        <div className="flex-1 flex flex-col sm:flex-row h-full overflow-hidden relative">
+          
+          {/* Հիմնական փակելու կոճակ (մուտք եղած վիճակում) */}
+          <button 
+            type="button"
+            onClick={() => setIsVisible(false)}
+            className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-gray-200 hover:bg-red-500 hover:text-white flex items-center justify-center text-gray-700 font-bold text-xs shadow-md cursor-pointer z-50 transition-colors"
+            title="Փակել չատը"
+          >
+            ✕
+          </button>
+
           {/* ՁԱԽ ՄԱՍ — Օգտատերեր */}
-          <div className="w-[190px] border-r border-gray-200 flex flex-col justify-between bg-gray-50/50">
+          <div className={`w-full sm:w-[190px] lg:w-[210px] border-r border-gray-200 flex flex-col justify-between bg-gray-50/50 ${selectedUser ? 'hidden sm:flex' : 'flex'} h-full pt-8 sm:pt-0`}>
             <div className="p-3 overflow-y-auto flex-1">
               <h4 className="font-bold text-[11px] text-gray-400 uppercase tracking-wider mb-2">Օգտատերեր ({usersList.length})</h4>
               <div className="space-y-1">
@@ -524,7 +550,7 @@ export default function Chat({ isOpen }) {
                         <img src={u.photoURL || DEFAULT_AVATAR} alt="" className="w-6 h-6 rounded-full border object-cover" referrerPolicy="no-referrer" />
                         <span className={`absolute bottom-0 right-0 w-2 h-2 rounded-full border border-white ${u.status === "online" ? "bg-green-500" : "bg-gray-400"}`}></span>
                       </div>
-                      <span className="text-xs font-medium truncate max-w-[90px]">{u.displayName}</span>
+                      <span className="text-xs font-medium truncate max-w-[110px]">{u.displayName}</span>
                     </div>
                     {unreadCounts[u.uid] > 0 && (
                       <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">{unreadCounts[u.uid]}</span>
@@ -536,20 +562,26 @@ export default function Chat({ isOpen }) {
             <div className="p-2 border-t bg-white flex items-center justify-between gap-1">
               <div className="flex items-center gap-1 overflow-hidden">
                 <img src={user.photoURL || DEFAULT_AVATAR} alt="" className="w-6 h-6 rounded-full object-cover" referrerPolicy="no-referrer" />
-                <span className="text-[11px] font-semibold truncate max-w-[75px]">{user.displayName}</span>
+                <span className="text-[11px] font-semibold truncate max-w-[85px]">{user.displayName}</span>
               </div>
               <button onClick={handleSignOut} className="text-[11px] text-red-500 hover:underline">Դուրս գալ</button>
             </div>
           </div>
 
           {/* ԱՋ ՄԱՍ — Չատ */}
-          <div className="flex-1 flex flex-col justify-between bg-white">
+          <div className={`flex-1 flex flex-col justify-between bg-white h-full ${!selectedUser ? 'hidden sm:flex' : 'flex'}`}>
             {selectedUser ? (
               <>
-                <div className="p-3 border-b flex items-center justify-between bg-gray-50">
+                <div className="p-3 border-b flex items-center justify-between bg-gray-50 pr-12 sm:pr-10">
                   <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setSelectedUser(null)} 
+                      className="sm:hidden text-gray-600 font-bold text-sm mr-1"
+                    >
+                      ←
+                    </button>
                     <img src={selectedUser.photoURL || DEFAULT_AVATAR} alt="" className="w-7 h-7 rounded-full object-cover" referrerPolicy="no-referrer" />
-                    <span className="font-semibold text-xs">{selectedUser.displayName}</span>
+                    <span className="font-semibold text-xs truncate max-w-[110px] sm:max-w-none">{selectedUser.displayName}</span>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => startCall("audio")} className="p-1.5 hover:bg-gray-200 rounded-full text-xs">📞</button>
@@ -562,7 +594,6 @@ export default function Chat({ isOpen }) {
                   {messages.map((msg) => {
                     const isMe = msg.senderId === user.uid;
                     
-                    // ԶԱՆԳԵՐԻ ՊԱՏՄՈՒԹՅԱՆ UI (CALL LOGS)
                     if (msg.isCallLog) {
                       const isMissed = msg.callLogType === "missed";
                       return (
@@ -596,7 +627,6 @@ export default function Chat({ isOpen }) {
                       );
                     }
 
-                    // ՍՈՎՈՐԱԿԱՆ ՆԱՄԱԿՆԵՐ ԵՎ ՁԱՅՆԱՅԻՆ
                     return (
                       <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                         <div className={`p-2 rounded-xl text-xs max-w-[80%] break-words shadow-sm ${isMe ? "bg-[#007bff] text-white" : "bg-gray-200 text-black"}`}>
@@ -621,11 +651,14 @@ export default function Chat({ isOpen }) {
                 </form>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-400 text-xs p-4 text-center bg-[#f4f4f7]">Ընտրեք օգտատեր՝ չատը սկսելու համար:</div>
+              <div className="flex-1 flex items-center justify-center text-gray-400 text-xs p-4 text-center bg-[#f4f4f7]">
+                Ընտրեք օգտատեր ձախ ցուցակից՝ չատը սկսելու համար:
+              </div>
             )}
           </div>
-        </>
+
+        </div>
       )}
     </div>
   );
-}  
+}
