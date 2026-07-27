@@ -8,18 +8,18 @@ const Header = () => {
 
   return (
     <header className="w-full h-[70px] lg:h-[90px] bg-white border-b border-[#eaeaea] select-none sticky top-0 z-50">
-      <div className="max-w-[1320px] mx-auto h-full flex items-center justify-between px-4 xl:px-[20px] gap-4">
+      <div className="max-w-[1320px] mx-auto h-full flex items-center justify-between px-2 sm:px-4 xl:px-[20px] gap-1 sm:gap-4">
         
-        {/* 1. Ձախում՝ Burger կոճակը (միայն հեռախոսների համար) և Լոգոն */}
-        <div className="shrink-0 flex items-center gap-3">
+        {/* 1. Ձախում՝ Burger կոճակը և Լոգոն */}
+        <div className="shrink-0 flex items-center gap-1 sm:gap-3">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden w-9 h-9 rounded-lg hover:bg-gray-100 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-gray-100 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors"
             aria-label="Toggle menu"
           >
-            <span className={`w-5 h-0.5 bg-gray-700 transition-transform duration-300 ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}></span>
-            <span className={`w-5 h-0.5 bg-gray-700 transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-0" : ""}`}></span>
-            <span className={`w-5 h-0.5 bg-gray-700 transition-transform duration-300 ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}></span>
+            <span className={`w-4 sm:w-5 h-0.5 bg-gray-700 transition-transform duration-300 ${isMobileMenuOpen ? "rotate-45 translate-y-2" : ""}`}></span>
+            <span className={`w-4 sm:w-5 h-0.5 bg-gray-700 transition-opacity duration-300 ${isMobileMenuOpen ? "opacity-0" : ""}`}></span>
+            <span className={`w-4 sm:w-5 h-0.5 bg-gray-700 transition-transform duration-300 ${isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""}`}></span>
           </button>
 
           <HeaderLogo />
@@ -31,7 +31,7 @@ const Header = () => {
         </div>
 
         {/* 3. Աջում՝ Իքոններն ու Search-ը */}
-        <div className="shrink-0 flex items-center">
+        <div className="shrink-0 flex items-center min-w-0">
           <HeaderEnd />
         </div>
 
