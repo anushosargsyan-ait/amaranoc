@@ -256,4 +256,4 @@ const MapModal = ({ isOpen, onClose }) => {
   );
 };
 
-export default MapModal;
+export default MapModal;  

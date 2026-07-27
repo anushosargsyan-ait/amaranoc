@@ -15,6 +15,30 @@ const iceServers = {
 
 const DEFAULT_AVATAR = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6v78OryFf-8N8yE_O0gPZt496E-C_n2-RFA&s";
 
+// Ծանուցման ձայնի ֆունկցիա (Web Audio API - Beep)
+const playNotificationSound = () => {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5 նոտա
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5 նոտա
+
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.4);
+  } catch (e) {
+    console.error("Audio error:", e);
+  }
+};
+
 // ==========================================
 // 1. VOICE PLAYER COMPONENT (Waveform)
 // ==========================================
@@ -86,10 +110,8 @@ function VoicePlayer({ audioUrl, isMe }) {
 // 2. ՀԻՄՆԱԿԱՆ CHAT COMPONENT
 // ==========================================
 export default function Chat({ isOpen }) {
-  // Ներքին սթեյթ, որը երաշխավորում է փակվելը անկախ ծնող կոմպոնենտից
   const [isVisible, setIsVisible] = useState(true);
 
-  // Եթե արտաքին isOpen-ը փոխվի true, նորից ցույց տալու համար
   useEffect(() => {
     if (isOpen) setIsVisible(true);
   }, [isOpen]);
@@ -101,7 +123,6 @@ export default function Chat({ isOpen }) {
   const [newMessage, setNewMessage] = useState("");
   const [unreadCounts, setUnreadCounts] = useState({}); 
 
-  // Ձայնագրման սթեյթեր
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -169,7 +190,7 @@ export default function Chat({ isOpen }) {
     };
   }, []);
 
-  // Չընթերցված նամակների քանակը
+  // Չընթերցված նամակների քանակը + Ձայնային ազդանշան նոր նամակի դեպքում
   useEffect(() => {
     if (!user) return;
 
@@ -182,6 +203,13 @@ export default function Chat({ isOpen }) {
       );
 
       return onSnapshot(q, (snapshot) => {
+        // Եթե կան նոր փոփոխություններ և ավելացել են նամակներ, հնչեցնել ձայնը
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            playNotificationSound();
+          }
+        });
+
         setUnreadCounts((prev) => ({ ...prev, [u.uid]: snapshot.size }));
       });
     });
@@ -212,7 +240,7 @@ export default function Chat({ isOpen }) {
     return () => unsubscribe();
   }, [selectedUser, user]);
 
-  // ՄՈՒՏՔԱՅԻՆ ԶԱՆԳԵՐԻ ԼՍՈՒՄ
+  // ՄՈՒՏՔԱՅԻՆ ԶԱՆԳԵՐԻ ԼՍՈՒՄ + Զանգի Ձայն
   useEffect(() => {
     if (!user) return;
 
@@ -222,6 +250,7 @@ export default function Chat({ isOpen }) {
         const data = change.doc.data();
         if (change.type === "added" || change.type === "modified") {
           if (data.targetId === user.uid && data.status === "offered" && callState === "idle") {
+            playNotificationSound(); // Հնչեցնել զանգի/ծանուցման ձայն
             setIsIncomingCall(true);
             setCallerInfo(data.caller);
             setCallType(data.type);
@@ -416,7 +445,6 @@ export default function Chat({ isOpen }) {
     setCallType(null);
   };
 
-  // ՁԱՅՆԱԳՐՈՒԹՅՈՒՆ
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -457,7 +485,6 @@ export default function Chat({ isOpen }) {
   const handleLogin = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { console.error(e); } };
   const handleSignOut = async () => { if (user) { await setDoc(doc(db, "users", user.uid), { status: "offline" }, { merge: true }); } signOut(auth); };
 
-  // Եթե արտաքինից փակ է կամ ներսից են սեղմել X-ը, չի ցուցադրվում
   if (!isOpen || !isVisible) return null;
 
   return (
@@ -509,7 +536,6 @@ export default function Chat({ isOpen }) {
 
       {!user ? (
         <div className="w-full h-full flex flex-col items-center justify-center p-5 gap-4 relative">
-          {/* Հիմնական փակելու կոճակ (մուտք չեղած վիճակում) */}
           <button 
             type="button"
             onClick={() => setIsVisible(false)}
@@ -522,7 +548,6 @@ export default function Chat({ isOpen }) {
       ) : (
         <div className="flex-1 flex flex-col sm:flex-row h-full overflow-hidden relative">
           
-          {/* Հիմնական փակելու կոճակ (մուտք եղած վիճակում) */}
           <button 
             type="button"
             onClick={() => setIsVisible(false)}
